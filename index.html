@@ -282,16 +282,18 @@ async function findResult() {
       return;
     }
 
-    // Build public URL from storage path
-    const { data: urlData } = _supabase.storage
+    // Mint a short-lived signed URL (bucket is private)
+    const { data: urlData, error: urlErr } = await _supabase.storage
       .from("results")
-      .getPublicUrl(data.pdf_path);
+      .createSignedUrl(data.pdf_path, 120); // 2 minutes
+
+    if (urlErr || !urlData) throw (urlErr || new Error("Could not generate download link"));
 
     document.getElementById("greeting").textContent =
       "Hello " + data.patient_name;
     document.getElementById("test-summary").textContent =
       "Test: " + data.test_summary + "  ·  Ref: " + refCode;
-    document.getElementById("download-link").href = urlData.publicUrl;
+    document.getElementById("download-link").href = urlData.signedUrl;
 
     showLoading(false);
     showSection("result-section");
